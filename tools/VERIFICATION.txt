@@ -1,0 +1,49 @@
+﻿
+VERIFICATION
+Verification is intended to assist the Chocolatey moderators and community
+in verifying that this package's contents are trustworthy.
+
+It was tested with llvm/clang and visual studio code. Follow these setup steps:
+	1. Install llvm including lldb
+	2. Set the env variable LLVMInstallDir to llvm toolchain.
+	3. Create an helloworld c++ file and in launch.json add:
+		   "MIMode": "lldb",
+		   "miDebuggerPath": "C:\\Program Files\\lldb-mi\\bin\\lldb-mi.exe" #adapt path if needed
+		  
+After these steps you can break, step over functions, view variables value, ...
+I noticed a small bug: to step over or step in the appropiate button
+needs to be pressed twice in a row, not only once.
+
+This lldb-mi is built by me using the available github sources. I manually 
+first built clang, lldb and libcxx and than finally built lldb-mi. For example:
+
+cmake -S ../llvm -B buildllvm
+	-DLLVM_ENABLE_PROJECTS="clang;lldb" 
+	-DLLVM_INSTALL_UTILS=ON -DCMAKE_BUILD_TYPE="Release" 
+	-DCMAKE_INSTALL_PREFIX="D:/Program Files (x86)/LLVM" 
+	-DLLVM_TARGETS_TO_BUILD=X86 -Thost=x64
+	
+cd buildllvm
+cmake --build .
+cmake --build . --target install
+
+cmake -S ../runtimes -B buildruntimes
+	-DLLVM_ENABLE_LLD=ON -DLIBCXX_ENABLE_SHARED=YES                      
+    -DLIBCXX_ENABLE_STATIC=NO -DLLVM_ENABLE_RUNTIMES=libcxx 
+	-DCMAKE_BUILD_TYPE="Release" 
+	-DCMAKE_INSTALL_PREFIX="D:/Program Files (x86)/LLVM" 
+	-DLLVM_TARGETS_TO_BUILD=X86 -T ClangCL
+	
+cd buildruntimes
+cmake --build .
+cmake --build . --target install
+
+Finally build the lldb-mi.exe:
+cmake -S ../lldb-mi -B build 
+	-DCMAKE_BUILD_TYPE=Release 
+	-DLLVM_ENABLE_LLD=ON -T "ClangCL"
+	
+cd build
+cmake --build .
+Run as ADMIN: cmake --build . --target install
+
