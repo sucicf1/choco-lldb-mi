@@ -1,11 +1,30 @@
 ﻿$ErrorActionPreference = 'Stop' # stop on all errors
-$toolsDir   = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
-$zipArchive = Join-Path $toolsDir -ChildPath 'lldb-mi.zip'
-$installPath = "$env:ProgramFiles\lldb-mi\bin"
-$miDebuggerPath = Join-Path $installPath.replace("\","\\") '\\lldb-mi.exe' 
-
-if ((Get-WmiObject win32_operatingsystem | select osarchitecture).osarchitecture -eq "64-bit")
+$osArchitecture = (Get-WmiObject win32_operatingsystem | select osarchitecture).osarchitecture
+switch ($osArchitecture) 
 {
+	"ARM 64-bit Processor"
+	{
+		$architecture = "arm64" 
+		break 
+	}
+	"64-bit" 
+	{ 
+		$architecture = "x64" 
+		break 
+	}
+	Default 
+	{ 
+		$architecture = "unknown" 
+	}
+}
+
+if (($architecture -eq "arm64") -or ($architecture -eq "x64"))
+{
+	$toolsDir   = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
+	$zipArchive = Join-Path $toolsDir -ChildPath "lldb-mi_$architecture.zip"
+	$installPath = "$env:ProgramFiles\lldb-mi\bin"
+	$miDebuggerPath = Join-Path $installPath.replace("\","\\") '\\lldb-mi.exe' 
+	
     $unzipArgs = @{
 		FileFullPath = $zipArchive
 		Destination = $installPath

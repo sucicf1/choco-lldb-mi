@@ -1,5 +1,5 @@
-﻿
-VERIFICATION
+﻿VERIFICATION
+
 Verification is intended to assist the Chocolatey moderators and community
 in verifying that this package's contents are trustworthy.
 
@@ -14,36 +14,114 @@ After these steps you can break, step over functions, view variables value, ...
 I noticed a small bug: to step over or step in the appropiate button
 needs to be pressed twice in a row, not only once.
 
-This lldb-mi is built by me using the available github sources. I manually 
-first built clang, lldb and libcxx and than finally built lldb-mi. For example:
+###############################################################
+# Building for x64
+###############################################################
 
-cmake -S ../llvm -B buildllvm
-	-DLLVM_ENABLE_PROJECTS="clang;lldb" 
-	-DLLVM_INSTALL_UTILS=ON -DCMAKE_BUILD_TYPE="Release" 
-	-DCMAKE_INSTALL_PREFIX="D:/Program Files (x86)/LLVM" 
-	-DLLVM_TARGETS_TO_BUILD=X86 -Thost=x64
+	* Adapt paths in command
 	
-cd buildllvm
-cmake --build .
-cmake --build . --target install
+Steps:
+	1. Install visual studio with workload "Desktop development
+	   with c++" and individual components "MSBuild support for
+	   LLVM (clang-cl) toolset", latest windows 11 sdk, all 
+	   latest C++ ATL and MFC build tools x64 including latest 
+	   spectre mitigated libs. Download from GitHub and unpack: 
+	   clang+llvm-20.1.8-x86_64-pc-windows-msvc.tar.xz. Install
+	   ninja and git and add it to path environment variable.
+	
+	2. In start menu folder "Visual Studio 2022" open "x64 
+	   Native Tools Command Prompt for VS 2022"
+	   
+	3. clone from github https://github.com/lldb-tools/lldb-mi
+	   and cd into it
+	   
+	4. Execute
+	
+	   cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER="D:/Program Files/llvm-x86_64-pc-windows-msvc/bin/clang-cl.exe" -DCMAKE_CXX_COMPILER="D:/Program Files/llvm-x86_64-pc-windows-msvc/bin/clang-cl.exe" -DLLVM_DIR="D:/Program Files/llvm-x86_64-pc-windows-msvc/lib/cmake/llvm" -S . -B outX64
 
-cmake -S ../runtimes -B buildruntimes
-	-DLLVM_ENABLE_LLD=ON -DLIBCXX_ENABLE_SHARED=YES                      
-    -DLIBCXX_ENABLE_STATIC=NO -DLLVM_ENABLE_RUNTIMES=libcxx 
-	-DCMAKE_BUILD_TYPE="Release" 
-	-DCMAKE_INSTALL_PREFIX="D:/Program Files (x86)/LLVM" 
-	-DLLVM_TARGETS_TO_BUILD=X86 -T ClangCL
+	5. cd into outX64 and execute
 	
-cd buildruntimes
-cmake --build .
-cmake --build . --target install
+	   cmake --build .
+	
+	Now inside outX64\src you will find your lldb-mi.exe x64 file.
+	
+###############################################################
+# Cross-compiling lldb-mi for arm64
+###############################################################
 
-Finally build the lldb-mi.exe:
-cmake -S ../lldb-mi -B build 
-	-DCMAKE_BUILD_TYPE=Release 
-	-DLLVM_ENABLE_LLD=ON -T "ClangCL"
+I don't have an arm64 machine so I needed to cross-compile llvm
+for arm64 to be able to compile lldb-mi for arm64. Important:
+	* Use Ninja generator because visual studio generator
+	  doesn't always work
+	* Adapt paths in command and toolchain file
+	* Some parameters don't work if put inside toolchain
+	  so please use commands like written
+	* It is important that you use correct visual studio
+	  developer command prompt.
+	  
+Steps:
+	1. Install visual studio with workload "Desktop development
+	   with c++" and individual components "MSBuild support for
+	   LLVM (clang-cl) toolset", latest windows 11 sdk, latest
+	   MSVC build tools for arm64, all latest C++ ATL and MFC
+	   build tools both x64 and arm64 including latest spectre
+	   mitigated libs. Download from GitHub and unpack: 
+	   clang+llvm-20.1.8-x86_64-pc-windows-msvc.tar.xz. Install
+	   ninja and git and add it to path environment variable.
 	
-cd build
-cmake --build .
-Run as ADMIN: cmake --build . --target install
+	2. Clone LLVM from https://github.com/llvm/llvm-project and
+	   git checkout release/20.x
+	
+	3. In start menu folder "Visual Studio 2022" open "x64 
+	   Native Tools Command Prompt for VS 2022" and cd into the
+	   llvm project folder cd /d E:\repos\llvm-project
+	
+	4. Execute 
+	   
+	   cmake -G Ninja -DCMAKE_C_COMPILER="D:/Program Files/llvm-x86_64-pc-windows-msvc/bin/clang-cl.exe" -DCMAKE_CXX_COMPILER="D:/Program Files/llvm-x86_64-pc-windows-msvc/bin/clang-cl.exe" -DCMAKE_LINKER_TYPE=LLD -DCMAKE_MT=mt -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;lld;lldb;mlir" -DLLVM_HOST_TRIPLE="x86_64-pc-windows" -DLLVM_TARGET_ARCH="X86" -DLLVM_TARGETS_TO_BUILD="AArch64" -DLLVM_DEFAULT_TARGET_TRIPLE="arm64-pc-windows-msvc" -DLLDB_ENABLE_PYTHON=0 -DLLDB_ENABLE_LIBEDIT=0 -DLLDB_ENABLE_CURSES=0 -DCMAKE_INSTALL_PREFIX="D:/Program Files/LLVMHostX64TargetArm64" -S llvm -B ..\llvmHostX64TargetArm64
+	
+	5. Execute 
+	   
+	   cd /d E:/repos/llvmHostX64TargetArm64
+	   cmake --build .
+	   cmake --build . --target install
+	
+	6. Inside the visual studio install path like
+	   "%ProgramFiles%\Microsoft Visual Studio\2022\Community\Common7\Tools"
+	   you will find the file VsDevCmd.bat. Close current terminal
+	   and cd into dir containing file VsDevCmd.bat and execute
+	   
+	   VsDevCmd.bat -arch=arm64 -host_arch=amd64
+	   
+	7. Currently we have built llvm that can build arm64
+	   binaries. Now cd into llvm-project dir
+	   cd /d E:\repos\llvm-project. In the folder where is the
+	   file that are you reading there is a toolchain file and
+	   adapt path inside it to use the previously generated
+	   compiler. Now execute
+	   
+	   cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;lld;lldb" -DLLVM_HOST_TRIPLE="arm64-pc-windows-msvc" -DLLVM_TARGETS_TO_BUILD="AArch64" -DLLVM_DEFAULT_TARGET_TRIPLE="arm64-pc-windows-msvc" -DLLDB_ENABLE_PYTHON=0 -DLLDB_ENABLE_LIBEDIT=0 -DLLDB_ENABLE_CURSES=0 -DCMAKE_INSTALL_PREFIX="D:/Program Files/LLVMArm64" -DLLVM_NATIVE_TOOL_DIR="E:/repos/llvmHostX64TargetArm64/bin" -DCMAKE_TOOLCHAIN_FILE="E:/repos/choco-lldb-mi/tools/targetArm64ToolChain.cmake" -S llvm -B ..\llvmArm64
+	
+	8. cd into dir llvmArm64 and execute:
+	   
+	   cmake --build .
+	   cmake --build . --target install
+	   
+	9. clone from github https://github.com/lldb-tools/lldb-mi
+	   and cd into it
+	
+	10. Now we need to use the llvmHostX64TargetArm64 compiler
+	    to cross-compile for arm64 and use the dependencies from
+		llvmArm64 compiler. Execute:
+		
+		cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DLLVM_DIR="D:/Program Files/LLVMArm64/lib/cmake/llvm" -DCMAKE_TOOLCHAIN_FILE="E:/repos/choco-lldb-mi/tools/targetArm64ToolChain.cmake" -S . -B outArm64
+		
+	11. cd into the child dir outArm64 and execute
+	
+		cmake --build .
+		
+	Now inside the outArm64\src folder you will find the lldb-mi.exe arm64 file.
+		
+		
+
 
