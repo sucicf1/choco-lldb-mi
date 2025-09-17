@@ -1,5 +1,5 @@
 ﻿$ErrorActionPreference = 'Stop' # stop on all errors
-$osArchitecture = (Get-WmiObject win32_operatingsystem | select osarchitecture).osarchitecture
+$osArchitecture = (Get-CimInstance win32_operatingsystem | select osarchitecture).osarchitecture
 switch ($osArchitecture) 
 {
 	"ARM 64-bit Processor"
@@ -21,7 +21,7 @@ switch ($osArchitecture)
 if (($architecture -eq "arm64") -or ($architecture -eq "x64"))
 {
 	$toolsDir   = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
-	$zipArchive = Join-Path $toolsDir -ChildPath "lldb-mi_$architecture.zip"
+	$zipArchive = Join-Path $toolsDir -ChildPath "lldb-mi_$architecture.7z"
 	$installPath = "$env:ProgramFiles\lldb-mi\bin"
 	$miDebuggerPath = Join-Path $installPath.replace("\","\\") '\\lldb-mi.exe' 
 	
